@@ -16,6 +16,7 @@ const BookingModal = ({ isOpen, onClose, session }) => {
     if (!name.trim()) newErrors.name = 'Name is required';
     if (!date) newErrors.date = 'Date is required';
     if (!people || people < 1) newErrors.people = 'Number of people is required';
+    if (people > 50) newErrors.people = 'Maximum 50 people allowed';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -77,6 +78,7 @@ const BookingModal = ({ isOpen, onClose, session }) => {
             <input
               type="number"
               min="1"
+              max="50"
               value={people}
               onChange={(e) => setPeople(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border-2 border-blue-200 focus:border-blue-600 outline-none font-medium"

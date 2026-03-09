@@ -1,11 +1,111 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 
 // Ensure these images are in your /src folder
 import bgSunrise from './assets/bg-backwaters.png';
 import bgSunsetPurple from './assets/bg-sunset-purple.png';
 
-const ParallaxCard = ({ session }) => {
+const BookingModal = ({ isOpen, onClose, session }) => {
+  const [name, setName] = useState('');
+  const [date, setDate] = useState('');
+  const [people, setPeople] = useState('');
+  const [errors, setErrors] = useState({});
+
+  const validate = () => {
+    const newErrors = {};
+    if (!name.trim()) newErrors.name = 'Name is required';
+    if (!date) newErrors.date = 'Date is required';
+    if (!people || people < 1) newErrors.people = 'Number of people is required';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (!validate()) return;
+  
+    // Use asterisks (*) for bold text in WhatsApp
+    const message = 
+  `*New SUP Booking Request* 🏄‍♂️
+  --------------------------
+  *Session:* ${session.type}
+  *Date:* ${date}
+  *Name:* ${name}
+  *Group Size:* ${people} Guests
+  
+  Hi! I'd like to book this Standup Paddling session. Please let me know if these spots are available!`;
+  
+    const whatsappUrl = `https://wa.me/917994737321?text=${encodeURIComponent(message)}`;
+    
+    window.open(whatsappUrl, '_blank');
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-[30px] p-8 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-3xl font-black text-blue-950 mb-2">Reserve Your Spot</h2>
+        <p className="text-blue-600 font-bold mb-6">{session.type}</p>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-bold text-blue-950 mb-2">Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border-2 border-blue-200 focus:border-blue-600 outline-none font-medium"
+              placeholder="Your name"
+            />
+            {errors.name && <p className="text-red-600 text-sm mt-1">{errors.name}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-blue-950 mb-2">Date</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border-2 border-blue-200 focus:border-blue-600 outline-none font-medium"
+            />
+            {errors.date && <p className="text-red-600 text-sm mt-1">{errors.date}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-blue-950 mb-2">Number of People</label>
+            <input
+              type="number"
+              min="1"
+              value={people}
+              onChange={(e) => setPeople(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border-2 border-blue-200 focus:border-blue-600 outline-none font-medium"
+              placeholder="1"
+            />
+            {errors.people && <p className="text-red-600 text-sm mt-1">{errors.people}</p>}
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-8">
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 rounded-xl border-2 border-blue-200 text-blue-950 font-bold hover:bg-blue-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className={`flex-1 py-3 rounded-xl ${session.buttonColor} text-white font-bold transition-transform active:scale-95 shadow-lg`}
+          >
+            Send via WhatsApp
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ParallaxCard = ({ session, onReserve }) => {
   const ref = useRef(null);
   
   const { scrollYProgress } = useScroll({
@@ -18,7 +118,7 @@ const ParallaxCard = ({ session }) => {
   return (
     <div 
       ref={ref}
-      className="group relative w-full h-[500px] rounded-[40px] overflow-hidden shadow-xl shadow-black/20 border border-white/60 mb-10"
+      className="group relative w-full h-[500px] rounded-[40px] overflow-hidden shadow-2xl shadow-black/40 border border-white/60 mb-10"
     >
       {/* BACKGROUND IMAGE LAYER */}
       <motion.div 
@@ -54,7 +154,10 @@ const ParallaxCard = ({ session }) => {
 
           <div className="flex justify-between items-center">
             <p className="text-5xl font-black text-white">{session.price}</p>
-            <button className={`${session.buttonColor} px-10 py-4 rounded-2xl text-white font-bold transition-transform active:scale-95 shadow-lg`}>
+            <button 
+              onClick={onReserve}
+              className={`${session.buttonColor} px-10 py-4 rounded-2xl text-white font-bold transition-transform active:scale-95 shadow-lg`}
+            >
               Reserve Spot
             </button>
           </div>
@@ -65,6 +168,14 @@ const ParallaxCard = ({ session }) => {
 };
 
 export default function App() {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState(null);
+
+  const handleReserve = (session) => {
+    setSelectedSession(session);
+    setModalOpen(true);
+  };
+
   const sessions = [
     { 
       type: "Sunrise Morning Session", 
@@ -103,8 +214,19 @@ export default function App() {
         </header>
 
         {sessions.map((s, i) => (
-          <ParallaxCard key={i} session={s} />
+          <ParallaxCard key={i} session={s} onReserve={() => handleReserve(s)} />
         ))}
+      </main>
+
+      {selectedSession && (
+        <BookingModal 
+          isOpen={modalOpen} 
+          onClose={() => setModalOpen(false)} 
+          session={selectedSession} 
+        />
+      )}
+
+      <main className="relative z-10 w-full max-w-4xl space-y-12" style={{display: 'none'}}>
       </main>
 
       {/* Glass Footer Section */}
